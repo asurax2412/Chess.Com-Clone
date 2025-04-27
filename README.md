@@ -9,7 +9,7 @@ A real-time multiplayer chess game built with Node.js, Express, Socket.io, chess
 - [Features](#features)
 - [Project Structure](#project-structure)
 - [How It Works](#how-it-works)
-- [Architecture Diagram](#architecture-diagram)
+- [Architecture Overview](#architecture-overview)
 - [Frontend Flow](#frontend-flow)
 - [Backend Flow](#backend-flow)
 - [Setup & Usage](#setup--usage)
@@ -67,80 +67,58 @@ Resource/
 
 ---
 
-## Architecture Diagram
+## Architecture Overview
 
-```mermaid
-graph TD
-    A[Client 1 (White)] -- Socket.io --> C[Node.js Server]
-    B[Client 2 (Black)] -- Socket.io --> C
-    D[Spectator Clients] -- Socket.io --> C
-    C -- Board State, Moves --> A
-    C -- Board State, Moves --> B
-    C -- Board State --> D
-    C -- Uses --> E[chess.js]
-    C -- Serves --> F[Static Files (JS, CSS, EJS)]
+**How the system works:**
+
+- Each client (player or spectator) connects to the Node.js server using Socket.io.
+- The server assigns roles (white, black, or spectator) and manages the game state using chess.js.
+- When a player makes a move, it is sent to the server, validated, and then broadcast to all clients.
+- The frontend updates the board in real time for all connected users.
+
+```
++----------------+         WebSocket         +-------------------+
+|  Player White  | <----------------------> |                   |
++----------------+                          |                   |
+                                            |                   |
++----------------+         WebSocket         |                   |
+|  Player Black  | <----------------------> |   Node.js Server  |
++----------------+                          |    (Express,      |
+                                            |    Socket.io,     |
++----------------+         WebSocket         |    chess.js)      |
+|  Spectator(s)  | <----------------------> |                   |
++----------------+                          |                   |
+                                            +-------------------+
 ```
 
 ---
 
 ## Frontend Flow
 
-```mermaid
-flowchart TD
-    A[User opens browser] --> B[Connects via Socket.io]
-    B --> C[Receives role (white/black/spectator)]
-    C --> D[Initial board render]
-    D --> E[User drags piece]
-    E --> F[Move sent to server]
-    F --> G[Wait for server validation]
-    G --> H[Board updates for all clients]
-```
+**Step-by-step process:**
 
-- **Socket.io Initialization:**  
-  Establishes a WebSocket connection to the server.
-
-- **Chess Game Initialization:**  
-  Uses chess.js to manage game state.
-
-- **DOM Manipulation:**  
-  Renders the chessboard and pieces dynamically.
-
-- **Drag and Drop:**  
-  Handles piece movement with drag events, only if it's the player's turn.
-
-- **Socket.io Event Handlers:**  
-  Listens for role assignment, board state updates, and move events.
+1. User opens the browser and connects to the server via Socket.io.
+2. The server assigns a role (white, black, or spectator).
+3. The initial board is rendered.
+4. If the user is a player, they can drag and drop pieces to make moves.
+5. The move is sent to the server for validation.
+6. If valid, the server broadcasts the move to all clients.
+7. All clients update their boards in real time.
 
 ---
 
 ## Backend Flow
 
-```mermaid
-flowchart TD
-    A[Client connects] --> B{Assign role}
-    B -- White slot free --> C[Assign white]
-    B -- Black slot free --> D[Assign black]
-    B -- Both taken --> E[Assign spectator]
-    C & D & E --> F[Send initial board state]
-    F --> G[Listen for move events]
-    G --> H{Validate move}
-    H -- Valid --> I[Update game state, broadcast move]
-    H -- Invalid --> J[Send invalid move]
-    I & J --> G
-    G --> K[Handle disconnects]
-```
+**Step-by-step process:**
 
-- **Express & Socket.io:**  
-  Sets up HTTP server and WebSocket communication.
-
-- **Player Management:**  
-  Assigns roles and tracks connections.
-
-- **Move Handling:**  
-  Validates moves, updates game state, and broadcasts updates.
-
-- **Disconnection:**  
-  Handles player disconnects and frees up roles.
+1. Client connects to the server.
+2. Server assigns a role (white, black, or spectator).
+3. Server sends the initial board state.
+4. Server listens for move events from players.
+5. Server validates the move using chess.js.
+6. If valid, the server updates the game state and broadcasts the move.
+7. If invalid, the server notifies the client.
+8. Server handles disconnects and updates player slots.
 
 ---
 
